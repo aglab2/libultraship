@@ -1,0 +1,237 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="mock">
+      <UniqueIdentifier>{0bc92eda-b259-47d1-8443-45a38b750892}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="fast3d-src">
+      <UniqueIdentifier>{e38403a2-6964-4337-a2d5-7966cfe98075}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="fast3d-inc">
+      <UniqueIdentifier>{e75636f5-dcfd-4994-9326-b1c5075e923f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="mock\libultraship">
+      <UniqueIdentifier>{0cca9592-a345-4abd-9143-b57b0c40e1df}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="mock\libultraship\libultra">
+      <UniqueIdentifier>{43da9b7b-9282-4a9a-bf61-8c44332d1f34}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="mock\menu">
+      <UniqueIdentifier>{7f094c02-5cc5-4f7d-9069-ed5af2d0f78f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="mock\core">
+      <UniqueIdentifier>{23968981-bff1-4e5c-b374-6e48349d7db7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="mock\core\bridge">
+      <UniqueIdentifier>{3c6a6b6f-c996-4bde-97f6-8396f38ac036}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="mock\misc">
+      <UniqueIdentifier>{341fa95b-2ae9-48bd-bcc0-9fc8a0822d3f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="mock\log">
+      <UniqueIdentifier>{0917a1a5-11b7-42b9-a55a-59aa53d7c1bf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="mock\resource">
+      <UniqueIdentifier>{531bd491-41c4-4a64-abdf-3d8f297ded6f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="mock\resource\type">
+      <UniqueIdentifier>{7c470098-d0e6-4761-ac31-a26feaf37223}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="mock\SDL2">
+      <UniqueIdentifier>{36534265-5c8b-427e-846e-0ab69775bf7e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="mock\GL">
+      <UniqueIdentifier>{e3e3f8b2-5f62-4465-910f-40da2575f827}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="xxhash">
+      <UniqueIdentifier>{7ad9726b-d52f-42aa-9d2c-71fbd9611728}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="dllmain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="config.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="dwnd.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="os.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="plugin.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="queue_executor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\graphic\Fast3D\gfx_cc.cpp">
+      <Filter>fast3d-src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\graphic\Fast3D\gfx_direct3d_common.cpp">
+      <Filter>fast3d-src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\graphic\Fast3D\gfx_direct3d11.cpp">
+      <Filter>fast3d-src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\graphic\Fast3D\gfx_dxgi.cpp">
+      <Filter>fast3d-src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\graphic\Fast3D\gfx_opengl.cpp">
+      <Filter>fast3d-src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\graphic\Fast3D\gfx_pc.cpp">
+      <Filter>fast3d-src</Filter>
+    </ClCompile>
+    <ClCompile Include="glew.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gfx_ucode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gfx_f3d.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gfx_f3dex.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="gfx_f3dex2.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="dwnd.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Gfx #1.3.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="os.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="plugin.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="queue_executor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="mock\imgui.h">
+      <Filter>mock</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\graphic\Fast3D\gfx_cc.h">
+      <Filter>fast3d-inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\graphic\Fast3D\gfx_direct3d_common.h">
+      <Filter>fast3d-inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\graphic\Fast3D\gfx_direct3d11.h">
+      <Filter>fast3d-inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\graphic\Fast3D\gfx_dxgi.h">
+      <Filter>fast3d-inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\graphic\Fast3D\gfx_opengl.h">
+      <Filter>fast3d-inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\graphic\Fast3D\gfx_pc.h">
+      <Filter>fast3d-inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\graphic\Fast3D\gfx_rendering_api.h">
+      <Filter>fast3d-inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\graphic\Fast3D\gfx_screen_config.h">
+      <Filter>fast3d-inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\graphic\Fast3D\gfx_window_manager_api.h">
+      <Filter>fast3d-inc</Filter>
+    </ClInclude>
+    <ClInclude Include="mock\libultraship\libultra\gbi.h">
+      <Filter>mock\libultraship\libultra</Filter>
+    </ClInclude>
+    <ClInclude Include="mock\libultraship\libultra\types.h">
+      <Filter>mock\libultraship\libultra</Filter>
+    </ClInclude>
+    <ClInclude Include="mock\menu\ImGuiImpl.h">
+      <Filter>mock\menu</Filter>
+    </ClInclude>
+    <ClInclude Include="mock\core\bridge\consolevariablebridge.h">
+      <Filter>mock\core\bridge</Filter>
+    </ClInclude>
+    <ClInclude Include="mock\misc\Hooks.h">
+      <Filter>mock\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="mock\libultraship\libultra\gs2dex.h">
+      <Filter>mock\libultraship\libultra</Filter>
+    </ClInclude>
+    <ClInclude Include="mock\log\luslog.h">
+      <Filter>mock\log</Filter>
+    </ClInclude>
+    <ClInclude Include="mock\resource\ResourceMgr.h">
+      <Filter>mock\resource</Filter>
+    </ClInclude>
+    <ClInclude Include="mock\resource\GameVersions.h">
+      <Filter>mock\resource</Filter>
+    </ClInclude>
+    <ClInclude Include="mock\resource\type\Texture.h">
+      <Filter>mock\resource\type</Filter>
+    </ClInclude>
+    <ClInclude Include="mock\misc\Utils.h">
+      <Filter>mock\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="mock\libultraship\libultraship.h">
+      <Filter>mock\libultraship</Filter>
+    </ClInclude>
+    <ClInclude Include="mock\core\Window.h">
+      <Filter>mock\core</Filter>
+    </ClInclude>
+    <ClInclude Include="mock\SDL2\SDL.h">
+      <Filter>mock\SDL2</Filter>
+    </ClInclude>
+    <ClInclude Include="mock\GL\glew.h">
+      <Filter>mock\GL</Filter>
+    </ClInclude>
+    <ClInclude Include="gfx_interpreter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gfx_interpreter.inc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gfx_emu.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gfx_ucode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gfx_f3d.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gfx_f3dex.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gfx_f3dex2.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="mock\libultraship\libultra\gbi_common.h">
+      <Filter>mock\libultraship\libultra</Filter>
+    </ClInclude>
+    <ClInclude Include="thirdparty\xxHash\xxhash.h">
+      <Filter>xxhash</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

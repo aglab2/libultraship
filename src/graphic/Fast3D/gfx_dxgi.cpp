@@ -29,6 +29,8 @@
 #include "core/bridge/consolevariablebridge.h"
 #include "misc/Hooks.h"
 
+#include "../../../Fast3DShip/plugin.h"
+
 #define DECLARE_GFX_DXGI_FUNCTIONS
 #include "gfx_dxgi.h"
 
@@ -64,19 +66,12 @@ static struct {
     ComPtr<IUnknown> swap_chain_device; // D3D11 Device or D3D12 Command Queue
     std::function<void()> before_destroy_swap_chain_fn;
     uint64_t qpc_init, qpc_freq;
-    uint64_t frame_timestamp; // in units of 1/FRAME_INTERVAL_NS_DENOMINATOR nanoseconds
-    std::map<UINT, DXGI_FRAME_STATISTICS> frame_stats;
-    std::set<std::pair<UINT, UINT>> pending_frame_stats;
     bool dropped_frame;
-    bool zero_latency;
     float detected_hz;
     UINT length_in_vsync_frames;
     uint32_t target_fps;
     uint32_t maximum_frame_latency;
     uint32_t applied_maximum_frame_latency;
-    HANDLE timer;
-    bool use_timer;
-    LARGE_INTEGER previous_present_time;
 
     void (*on_fullscreen_changed)(bool is_now_fullscreen);
     void (*run_one_game_iter)(void);
@@ -169,6 +164,8 @@ static void toggle_borderless_window_full_screen(bool enable, bool call_callback
         return;
     }
 
+    static HMENU windowedMenu;
+
     if (!enable) {
         RECT r = dxgi.last_window_rect;
 
@@ -182,6 +179,12 @@ static void toggle_borderless_window_full_screen(bool enable, bool call_callback
             SetWindowPos(dxgi.h_wnd, NULL, r.left, r.top, r.right - r.left, r.bottom - r.top, SWP_FRAMECHANGED);
             ShowWindow(dxgi.h_wnd, SW_RESTORE);
         }
+
+        if (windowedMenu)
+            SetMenu(dxgi.h_wnd, windowedMenu);
+
+        if (Plugin::info().hStatusBar)
+            ShowWindow(Plugin::info().hStatusBar, SW_SHOW);
 
         dxgi.is_full_screen = false;
     } else {
@@ -206,6 +209,13 @@ static void toggle_borderless_window_full_screen(bool enable, bool call_callback
         // Set borderless full screen to that monitor
         SetWindowLongPtr(dxgi.h_wnd, GWL_STYLE, WS_VISIBLE | WS_POPUP);
         SetWindowPos(dxgi.h_wnd, HWND_TOP, r.left, r.top, r.right - r.left, r.bottom - r.top, SWP_FRAMECHANGED);
+
+        windowedMenu = GetMenu(dxgi.h_wnd);
+        if (windowedMenu)
+            SetMenu(dxgi.h_wnd, NULL);
+
+        if (Plugin::info().hStatusBar)
+            ShowWindow(Plugin::info().hStatusBar, SW_HIDE);
 
         dxgi.is_full_screen = true;
     }
@@ -290,6 +300,8 @@ static LRESULT CALLBACK gfx_dxgi_wnd_proc(HWND h_wnd, UINT message, WPARAM w_par
 
 void gfx_dxgi_init(const char* game_name, const char* gfx_api_name, bool start_in_fullscreen, uint32_t width,
                    uint32_t height) {
+    Plugin::resize(start_in_fullscreen);
+
     LARGE_INTEGER qpc_init, qpc_freq;
     QueryPerformanceCounter(&qpc_init);
     QueryPerformanceFrequency(&qpc_freq);
@@ -298,7 +310,6 @@ void gfx_dxgi_init(const char* game_name, const char* gfx_api_name, bool start_i
 
     dxgi.target_fps = 60;
     dxgi.maximum_frame_latency = 1;
-    dxgi.timer = CreateWaitableTimer(nullptr, false, nullptr);
 
     // Prepare window title
 
@@ -307,45 +318,13 @@ void gfx_dxgi_init(const char* game_name, const char* gfx_api_name, bool start_i
     int len = sprintf(title, "%s (%s - %s)", game_name, GFX_BACKEND_NAME, gfx_api_name);
     mbstowcs(w_title, title, len + 1);
     dxgi.game_name = game_name;
-
-    // Create window
-    WNDCLASSEXW wcex;
-
-    wcex.cbSize = sizeof(WNDCLASSEX);
-
-    wcex.style = CS_HREDRAW | CS_VREDRAW;
-    wcex.lpfnWndProc = gfx_dxgi_wnd_proc;
-    wcex.cbClsExtra = 0;
-    wcex.cbWndExtra = 0;
-    wcex.hInstance = nullptr;
-    wcex.hIcon = nullptr;
-    wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
-    wcex.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
-    wcex.lpszMenuName = nullptr;
-    wcex.lpszClassName = WINCLASS_NAME;
-    wcex.hIconSm = nullptr;
-
-    ATOM winclass = RegisterClassExW(&wcex);
-
-    run_as_dpi_aware([&]() {
-        // We need to be dpi aware when calculating the size
-        RECT wr = { 0, 0, width, height };
-        AdjustWindowRect(&wr, WS_OVERLAPPEDWINDOW, FALSE);
-
-        dxgi.h_wnd = CreateWindowW(WINCLASS_NAME, w_title, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, 0, wr.right - wr.left,
-                                   wr.bottom - wr.top, nullptr, nullptr, nullptr, nullptr);
-    });
+    dxgi.h_wnd = Plugin::hWnd();
 
     load_dxgi_library();
-
-    ShowWindow(dxgi.h_wnd, SW_SHOW);
-    UpdateWindow(dxgi.h_wnd);
 
     if (start_in_fullscreen) {
         toggle_borderless_window_full_screen(true, false);
     }
-
-    DragAcceptFiles(dxgi.h_wnd, TRUE);
 }
 
 static void gfx_dxgi_close() {
@@ -374,6 +353,7 @@ static void gfx_dxgi_set_cursor_visibility(bool visible) {
 }
 
 static void gfx_dxgi_set_fullscreen(bool enable) {
+    Plugin::resize(enable);
     toggle_borderless_window_full_screen(enable, true);
 }
 
@@ -422,169 +402,11 @@ static uint64_t qpc_to_100ns(uint64_t qpc) {
 }
 
 static bool gfx_dxgi_start_frame(void) {
-    DXGI_FRAME_STATISTICS stats;
-    if (dxgi.swap_chain->GetFrameStatistics(&stats) == S_OK &&
-        (stats.SyncRefreshCount != 0 || stats.SyncQPCTime.QuadPart != 0ULL)) {
-        {
-            LARGE_INTEGER t0;
-            QueryPerformanceCounter(&t0);
-            // printf("Get frame stats: %llu\n", (unsigned long long)(t0.QuadPart - dxgi.qpc_init));
-        }
-        // printf("stats: %u %u %u %u %u %.6f\n", dxgi.pending_frame_stats.rbegin()->first,
-        // dxgi.pending_frame_stats.rbegin()->second, stats.PresentCount, stats.PresentRefreshCount,
-        // stats.SyncRefreshCount, (double)(stats.SyncQPCTime.QuadPart - dxgi.qpc_init) / dxgi.qpc_freq);
-        if (dxgi.frame_stats.empty() || dxgi.frame_stats.rbegin()->second.PresentCount != stats.PresentCount) {
-            dxgi.frame_stats.insert(std::make_pair(stats.PresentCount, stats));
-        }
-        if (dxgi.frame_stats.size() > 3) {
-            dxgi.frame_stats.erase(dxgi.frame_stats.begin());
-        }
-    }
-    if (!dxgi.frame_stats.empty()) {
-        while (!dxgi.pending_frame_stats.empty() &&
-               dxgi.pending_frame_stats.begin()->first < dxgi.frame_stats.rbegin()->first) {
-            dxgi.pending_frame_stats.erase(dxgi.pending_frame_stats.begin());
-        }
-    }
-    while (dxgi.pending_frame_stats.size() > 40) {
-        // Just make sure the list doesn't grow too large if GetFrameStatistics fails.
-        dxgi.pending_frame_stats.erase(dxgi.pending_frame_stats.begin());
-
-        // These are not that useful anymore
-        dxgi.frame_stats.clear();
-    }
-
-    dxgi.use_timer = false;
-
-    dxgi.frame_timestamp += FRAME_INTERVAL_NS_NUMERATOR;
-
-    if (dxgi.frame_stats.size() >= 2) {
-        DXGI_FRAME_STATISTICS* first = &dxgi.frame_stats.begin()->second;
-        DXGI_FRAME_STATISTICS* last = &dxgi.frame_stats.rbegin()->second;
-        uint64_t sync_qpc_diff = last->SyncQPCTime.QuadPart - first->SyncQPCTime.QuadPart;
-        UINT sync_vsync_diff = last->SyncRefreshCount - first->SyncRefreshCount;
-        UINT present_vsync_diff = last->PresentRefreshCount - first->PresentRefreshCount;
-        UINT present_diff = last->PresentCount - first->PresentCount;
-
-        if (sync_vsync_diff == 0) {
-            sync_vsync_diff = 1;
-        }
-
-        double estimated_vsync_interval = (double)sync_qpc_diff / (double)sync_vsync_diff;
-        uint64_t estimated_vsync_interval_ns = qpc_to_ns(estimated_vsync_interval);
-        // printf("Estimated vsync_interval: %d\n", (int)estimated_vsync_interval_ns);
-        if (estimated_vsync_interval_ns < 2000 || estimated_vsync_interval_ns > 1000000000) {
-            // Unreasonable, maybe a monitor change
-            estimated_vsync_interval_ns = 16666666;
-            estimated_vsync_interval = estimated_vsync_interval_ns * dxgi.qpc_freq / 1000000000;
-        }
-
-        dxgi.detected_hz = (float)((double)1000000000 / (double)estimated_vsync_interval_ns);
-
-        UINT queued_vsyncs = 0;
-        bool is_first = true;
-        for (const std::pair<UINT, UINT>& p : dxgi.pending_frame_stats) {
-            /*if (is_first && dxgi.zero_latency) {
-                is_first = false;
-                continue;
-            }*/
-            queued_vsyncs += p.second;
-        }
-
-        uint64_t last_frame_present_end_qpc =
-            (last->SyncQPCTime.QuadPart - dxgi.qpc_init) + estimated_vsync_interval * queued_vsyncs;
-        uint64_t last_end_ns = qpc_to_ns(last_frame_present_end_qpc);
-
-        double vsyncs_to_wait = (double)(int64_t)(dxgi.frame_timestamp / FRAME_INTERVAL_NS_DENOMINATOR - last_end_ns) /
-                                estimated_vsync_interval_ns;
-        // printf("ts: %llu, last_end_ns: %llu, Init v: %f\n", dxgi.frame_timestamp / 3, last_end_ns, vsyncs_to_wait);
-
-        if (vsyncs_to_wait <= 0) {
-            // Too late
-
-            if ((int64_t)(dxgi.frame_timestamp / FRAME_INTERVAL_NS_DENOMINATOR - last_end_ns) < -66666666) {
-                // The application must have been paused or similar
-                vsyncs_to_wait = round(((double)FRAME_INTERVAL_NS_NUMERATOR / FRAME_INTERVAL_NS_DENOMINATOR) /
-                                       estimated_vsync_interval_ns);
-                if (vsyncs_to_wait < 1) {
-                    vsyncs_to_wait = 1;
-                }
-                dxgi.frame_timestamp =
-                    FRAME_INTERVAL_NS_DENOMINATOR * (last_end_ns + vsyncs_to_wait * estimated_vsync_interval_ns);
-            } else {
-                // Drop frame
-                // printf("Dropping frame\n");
-                dxgi.dropped_frame = true;
-                return false;
-            }
-        }
-        double orig_wait = vsyncs_to_wait;
-        if (floor(vsyncs_to_wait) != vsyncs_to_wait) {
-            uint64_t left = last_end_ns + floor(vsyncs_to_wait) * estimated_vsync_interval_ns;
-            uint64_t right = last_end_ns + ceil(vsyncs_to_wait) * estimated_vsync_interval_ns;
-            uint64_t adjusted_desired_time =
-                dxgi.frame_timestamp / FRAME_INTERVAL_NS_DENOMINATOR +
-                (last_end_ns + (FRAME_INTERVAL_NS_NUMERATOR / FRAME_INTERVAL_NS_DENOMINATOR) >
-                         dxgi.frame_timestamp / FRAME_INTERVAL_NS_DENOMINATOR
-                     ? 2000000
-                     : -2000000);
-            int64_t diff_left = adjusted_desired_time - left;
-            int64_t diff_right = right - adjusted_desired_time;
-            if (diff_left < 0) {
-                diff_left = -diff_left;
-            }
-            if (diff_right < 0) {
-                diff_right = -diff_right;
-            }
-            if (diff_left < diff_right) {
-                vsyncs_to_wait = floor(vsyncs_to_wait);
-            } else {
-                vsyncs_to_wait = ceil(vsyncs_to_wait);
-            }
-            if (vsyncs_to_wait == 0) {
-                // printf("vsyncs_to_wait became 0 so dropping frame\n");
-                dxgi.dropped_frame = true;
-                return false;
-            }
-        }
-        // printf("v: %d\n", (int)vsyncs_to_wait);
-        if (vsyncs_to_wait > 4) {
-            // Invalid, so use timer based solution
-            vsyncs_to_wait = 4;
-            dxgi.use_timer = true;
-        }
-        dxgi.length_in_vsync_frames = vsyncs_to_wait;
-    } else {
-        dxgi.length_in_vsync_frames = 1;
-        dxgi.use_timer = true;
-    }
-
     return true;
 }
 
 static void gfx_dxgi_swap_buffers_begin(void) {
-    // dxgi.length_in_vsync_frames = 1;
-    LARGE_INTEGER t;
-    if (dxgi.use_timer) {
-        QueryPerformanceCounter(&t);
-        int64_t next = qpc_to_100ns(dxgi.previous_present_time.QuadPart) +
-                       FRAME_INTERVAL_NS_NUMERATOR / (FRAME_INTERVAL_NS_DENOMINATOR * 100);
-        int64_t left = next - qpc_to_100ns(t.QuadPart);
-        if (left > 0) {
-            LARGE_INTEGER li;
-            li.QuadPart = -left;
-            SetWaitableTimer(dxgi.timer, &li, 0, nullptr, nullptr, false);
-            WaitForSingleObject(dxgi.timer, INFINITE);
-        }
-    }
-    QueryPerformanceCounter(&t);
-    dxgi.previous_present_time = t;
-
     ThrowIfFailed(dxgi.swap_chain->Present(dxgi.length_in_vsync_frames, 0));
-    UINT this_present_id;
-    if (dxgi.swap_chain->GetLastPresentCount(&this_present_id) == S_OK) {
-        dxgi.pending_frame_stats.insert(std::make_pair(this_present_id, dxgi.length_in_vsync_frames));
-    }
     dxgi.dropped_frame = false;
 }
 
@@ -611,10 +433,6 @@ static void gfx_dxgi_swap_buffers_end(void) {
 
         gfx_dxgi_create_swap_chain(dxgi.swap_chain_device.Get(), move(dxgi.before_destroy_swap_chain_fn));
 
-        dxgi.frame_timestamp = 0;
-        dxgi.frame_stats.clear();
-        dxgi.pending_frame_stats.clear();
-
         return; // Make sure we don't wait a second time on the waitable object, since that would hang the program
     } else if (dxgi.applied_maximum_frame_latency != dxgi.maximum_frame_latency) {
         apply_maximum_frame_latency(false);
@@ -632,8 +450,6 @@ static void gfx_dxgi_swap_buffers_end(void) {
 
     QueryPerformanceCounter(&t2);
 
-    dxgi.zero_latency = dxgi.pending_frame_stats.rbegin()->first == stats.PresentCount;
-
     // printf(L"done %I64u gpu:%d wait:%d freed:%I64u frame:%u %u monitor:%u t:%I64u\n", (unsigned long
     // long)(t0.QuadPart - dxgi.qpc_init), (int)(t1.QuadPart - t0.QuadPart), (int)(t2.QuadPart - t0.QuadPart), (unsigned
     // long long)(t2.QuadPart - dxgi.qpc_init), dxgi.pending_frame_stats.rbegin()->first, stats.PresentCount,
@@ -647,11 +463,7 @@ static double gfx_dxgi_get_time(void) {
 }
 
 static void gfx_dxgi_set_target_fps(int fps) {
-    uint32_t old_fps = dxgi.target_fps;
-    uint64_t t0 = dxgi.frame_timestamp / old_fps;
-    uint32_t t1 = dxgi.frame_timestamp % old_fps;
     dxgi.target_fps = fps;
-    dxgi.frame_timestamp = t0 * dxgi.target_fps + t1 * dxgi.target_fps / old_fps;
 }
 
 static void gfx_dxgi_set_maximum_frame_latency(int latency) {
@@ -686,12 +498,6 @@ void gfx_dxgi_create_factory_and_device(bool debug, int d3d_version,
         }
     }
     create_device_fn(adapter.Get(), false);
-
-    char title[512];
-    wchar_t w_title[512];
-    int len = sprintf(title, "%s (Direct3D %d)", dxgi.game_name.c_str(), d3d_version);
-    mbstowcs(w_title, title, len + 1);
-    SetWindowTextW(dxgi.h_wnd, w_title);
 }
 
 void gfx_dxgi_create_swap_chain(IUnknown* device, std::function<void()>&& before_destroy_fn) {

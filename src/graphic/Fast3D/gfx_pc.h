@@ -11,6 +11,8 @@
 #include "libultraship/libultra/gbi.h"
 #include "libultraship/libultra/types.h"
 
+#include "xxh3.h"
+
 // TODO figure out why changing these to 640x480 makes the game only render in a quarter of the window
 #define SCREEN_WIDTH 320
 #define SCREEN_HEIGHT 240
@@ -31,9 +33,12 @@ struct GfxDimensions {
     float aspect_ratio;
 };
 
+static bool operator==(XXH128_hash_t l, XXH128_hash_t r) {
+    return l.high64 == r.high64 && l.low64 == r.low64;
+}
+
 struct TextureCacheKey {
-    const uint8_t* texture_addr;
-    const uint8_t* palette_addrs[2];
+    XXH128_hash_t hash;
     uint8_t fmt, siz;
     uint8_t palette_index;
 
@@ -41,8 +46,7 @@ struct TextureCacheKey {
 
     struct Hasher {
         size_t operator()(const TextureCacheKey& key) const noexcept {
-            uintptr_t addr = (uintptr_t)key.texture_addr;
-            return (size_t)(addr ^ (addr >> 5));
+            return (size_t) key.hash.low64;
         }
     };
 };
