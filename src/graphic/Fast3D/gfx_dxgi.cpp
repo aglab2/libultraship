@@ -78,7 +78,7 @@ static struct {
     bool (*on_key_down)(int scancode);
     bool (*on_key_up)(int scancode);
     void (*on_all_keys_up)(void);
-} dxgi;
+} dxgi = { };
 
 static void load_dxgi_library(void) {
     dxgi.dxgi_module = LoadLibraryW(L"dxgi.dll");
@@ -164,13 +164,15 @@ static void toggle_borderless_window_full_screen(bool enable, bool call_callback
         return;
     }
 
+    static LONG windowedStyle;
     static HMENU windowedMenu;
 
     if (!enable) {
         RECT r = dxgi.last_window_rect;
 
         // Set in window mode with the last saved position and size
-        SetWindowLongPtr(dxgi.h_wnd, GWL_STYLE, WS_VISIBLE | WS_OVERLAPPEDWINDOW);
+        SetWindowLongPtr(dxgi.h_wnd, GWL_STYLE, windowedStyle);
+        SetWindowLongPtr(dxgi.h_wnd, GWL_EXSTYLE, WS_EX_ACCEPTFILES | WS_EX_APPWINDOW);
 
         if (dxgi.last_maximized_state) {
             SetWindowPos(dxgi.h_wnd, NULL, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE);
@@ -205,6 +207,8 @@ static void toggle_borderless_window_full_screen(bool enable, bool call_callback
         monitor_info.cbSize = sizeof(MONITORINFOEX);
         GetMonitorInfo(h_monitor, &monitor_info);
         RECT r = monitor_info.rcMonitor;
+
+        windowedStyle = GetWindowLongPtr(dxgi.h_wnd, GWL_STYLE);
 
         // Set borderless full screen to that monitor
         SetWindowLongPtr(dxgi.h_wnd, GWL_STYLE, WS_VISIBLE | WS_POPUP);
@@ -325,6 +329,14 @@ void gfx_dxgi_init(const char* game_name, const char* gfx_api_name, bool start_i
     if (start_in_fullscreen) {
         toggle_borderless_window_full_screen(true, false);
     }
+}
+
+void gfx_dxgi_deinit() {
+    // TODO: Hacky, use cpp dtors
+    HMODULE dxgi_module = std::move(dxgi.dxgi_module);
+    CloseHandle(dxgi.waitable_object);
+    dxgi = {};
+    FreeLibrary(dxgi_module);
 }
 
 static void gfx_dxgi_close() {
@@ -537,6 +549,17 @@ void gfx_dxgi_create_swap_chain(IUnknown* device, std::function<void()>&& before
     dxgi.before_destroy_swap_chain_fn = std::move(before_destroy_fn);
 }
 
+void gfx_dxgi_destroy_swap_chain() {
+    dxgi.before_destroy_swap_chain_fn();
+    dxgi.swap_chain.Reset();
+    dxgi.swap_chain_device.Reset();
+}
+
+void gfx_dxgi_destroy_factory_and_device() {
+    dxgi.factory.Reset();
+    dxgi.swap_chain_device.Reset();
+}
+
 HWND gfx_dxgi_get_h_wnd(void) {
     return dxgi.h_wnd;
 }
@@ -568,6 +591,7 @@ const char* gfx_dxgi_get_key_name(int scancode) {
 }
 
 extern "C" struct GfxWindowManagerAPI gfx_dxgi_api = { gfx_dxgi_init,
+                                                       gfx_dxgi_deinit,
                                                        gfx_dxgi_close,
                                                        gfx_dxgi_set_keyboard_callbacks,
                                                        gfx_dxgi_set_fullscreen_changed_callback,

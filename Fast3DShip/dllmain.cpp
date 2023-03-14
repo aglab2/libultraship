@@ -46,7 +46,7 @@ static void plugin_init(void) {
 }
 
 static void plugin_deinit(void) {
-    // gfx_deinit();
+    gfx_deinit();
 }
 
 static uint32_t gUCStart = -1;
@@ -112,7 +112,7 @@ EXPORT void CALL CaptureScreen(char* Directory) {
 *******************************************************************/
 EXPORT void CALL ChangeWindow(void) {
     gFullscreen = !gFullscreen;
-    // gfx_get_current_window_manager_api()->set_fullscreen(gFullscreen);
+    gfx_get_current_window_manager_api()->set_fullscreen(gFullscreen);
 }
 
 /******************************************************************

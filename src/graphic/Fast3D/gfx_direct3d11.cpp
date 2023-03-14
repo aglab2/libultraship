@@ -155,7 +155,7 @@ static struct {
     int8_t last_depth_mask = -1;
     int8_t last_zmode_decal = -1;
     D3D_PRIMITIVE_TOPOLOGY last_primitive_topology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
-} d3d;
+} d3d = { };
 
 static LARGE_INTEGER last_time, accumulated_time, frequency;
 
@@ -389,6 +389,24 @@ void CSMain(uint3 DTid : SV_DispatchThreadID) {
     window_impl.backend = SohImGui::Backend::DX11;
     window_impl.Dx11 = { gfx_dxgi_get_h_wnd(), d3d.context.Get(), d3d.device.Get() };
     SohImGui::Init(window_impl);
+}
+
+static void gfx_d3d11_deinit() {
+    HMODULE d3d11_module = d3d.d3d11_module;
+    HMODULE d3dcompiler_module = d3d.d3dcompiler_module;
+
+    auto context = d3d.context;
+    auto device = d3d.device;
+    gfx_dxgi_destroy_swap_chain();
+    d3d = {};
+    gfx_dxgi_destroy_factory_and_device();
+
+    context->Flush();
+    context.Reset();
+    device.Reset();
+
+    FreeLibrary(d3d11_module);
+    FreeLibrary(d3dcompiler_module);
 }
 
 static int gfx_d3d11_get_max_texture_size() {
@@ -1108,6 +1126,7 @@ struct GfxRenderingAPI gfx_direct3d11_api = { gfx_d3d11_get_name,
                                               gfx_d3d11_set_use_alpha,
                                               gfx_d3d11_draw_triangles,
                                               gfx_d3d11_init,
+                                              gfx_d3d11_deinit,
                                               gfx_d3d11_on_resize,
                                               gfx_d3d11_start_frame,
                                               gfx_d3d11_end_frame,

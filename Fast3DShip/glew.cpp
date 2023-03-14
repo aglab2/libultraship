@@ -34,6 +34,7 @@ PFNGLDELETERENDERBUFFERSPROC __glewDeleteRenderbuffers = NULL;
 PFNGLUNIFORM1FPROC __glewUniform1f = NULL;
 PFNGLRENDERBUFFERSTORAGEMULTISAMPLEPROC __glewRenderbufferStorageMultisample = NULL;
 PFNGLBLITFRAMEBUFFERPROC __glewBlitFramebuffer = NULL;
+PFNGLDELETEFRAMEBUFFERSPROC __glewDeleteFramebuffers = NULL;
 
 #if defined(_WIN32)
 PFNWGLSWAPINTERVALEXTPROC __wglewSwapIntervalEXT = NULL;
@@ -71,6 +72,8 @@ void glewInit(void) {
 #endif
 
     // Common functions exports
+    // 1.3
+    glActiveTexture = (PFNGLACTIVETEXTUREPROC)glewGetProcAddress((const GLubyte*)"glActiveTexture");
     // 1.5
     glBindBuffer = (PFNGLBINDBUFFERPROC)glewGetProcAddress((const GLubyte*)"glBindBuffer");
     glBufferData = (PFNGLBUFFERDATAPROC)glewGetProcAddress((const GLubyte*)"glBufferData");
@@ -112,8 +115,7 @@ void glewInit(void) {
     glRenderbufferStorageMultisample =
         (PFNGLRENDERBUFFERSTORAGEMULTISAMPLEPROC)glewGetProcAddress((const GLubyte*)"glRenderbufferStorageMultisample");
     glBlitFramebuffer = (PFNGLBLITFRAMEBUFFERPROC)glewGetProcAddress((const GLubyte*)"glBlitFramebuffer");
-    // GL_ARB_multitexture
-    glActiveTexture = (PFNGLACTIVETEXTUREPROC)glewGetProcAddress((const GLubyte*)"glActiveTexture");
+    glDeleteFramebuffers = (PFNGLDELETEFRAMEBUFFERSPROC)glewGetProcAddress((const GLubyte*)"glDeleteFramebuffers");
 
     // OS specific stuff
 #if defined(GLEW_EGL)

@@ -113,6 +113,7 @@ typedef void(GLAPIENTRY* PFNGLRENDERBUFFERSTORAGEMULTISAMPLEPROC)(GLenum target,
 typedef void(GLAPIENTRY* PFNGLBLITFRAMEBUFFERPROC)(GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0,
                                                    GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask,
                                                    GLenum filter);
+typedef void(GLAPIENTRY* PFNGLDELETEFRAMEBUFFERSPROC)(GLsizei n, const GLuint* framebuffers);
 
 #if defined(_WIN32)
 #include <Windows.h>
@@ -154,6 +155,7 @@ extern PFNGLDELETERENDERBUFFERSPROC __glewDeleteRenderbuffers;
 extern PFNGLUNIFORM1FPROC __glewUniform1f;
 extern PFNGLRENDERBUFFERSTORAGEMULTISAMPLEPROC __glewRenderbufferStorageMultisample;
 extern PFNGLBLITFRAMEBUFFERPROC __glewBlitFramebuffer;
+extern PFNGLDELETEFRAMEBUFFERSPROC __glewDeleteFramebuffers;
 
 #if defined(_WIN32)
 extern PFNWGLSWAPINTERVALEXTPROC __wglewSwapIntervalEXT;
@@ -193,6 +195,7 @@ extern PFNWGLSWAPINTERVALEXTPROC __wglewSwapIntervalEXT;
 #define glUniform1f GLEW_GET_FUN(__glewUniform1f)
 #define glRenderbufferStorageMultisample GLEW_GET_FUN(__glewRenderbufferStorageMultisample)
 #define glBlitFramebuffer GLEW_GET_FUN(__glewBlitFramebuffer)
+#define glDeleteFramebuffers GLEW_GET_FUN(__glewDeleteFramebuffers)
 
 #define GL_FALSE 0
 #define GL_TRUE 1

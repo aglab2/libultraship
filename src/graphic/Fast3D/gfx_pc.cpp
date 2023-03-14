@@ -639,6 +639,8 @@ struct ByteSwappedBuffer {
                 return rounded + 1;
             case 3:
                 return rounded;
+            default:
+                abort();
         }
     }
 
@@ -2303,8 +2305,61 @@ void gfx_init(struct GfxWindowManagerAPI* wapi, struct GfxRenderingAPI* rapi, co
     Ship::ExecuteHooks<Ship::GfxInit>();
 }
 
+void gfx_deinit() {
+    gfx_texture_cache = {};
+    color_combiner_pool.clear();
+    prev_combiner = color_combiner_pool.end();
+    if (tex_upload_buffer) {
+        free(tex_upload_buffer);
+        tex_upload_buffer = nullptr;
+    }
+    rsp = {};
+    rdp = {};
+    rendering_state = {};
+    gfx_current_window_dimensions = {};
+    gfx_current_dimensions = {};
+    gfx_prev_dimensions = {};
+    gfx_current_game_window_viewport = {};
+
+    game_renders_to_framebuffer = false;
+    game_framebuffer = 0;
+    game_framebuffer_msaa_resolved = 0;
+
+    gfx_msaa_level = 1;
+
+    has_drawn_imgui_menu = false;
+
+    dropped_frame = false;
+
+    current_mtx_replacements = nullptr;
+    buf_vbo_len = 0;
+    buf_vbo_num_tris = 0;
+
+    markerOn = false;
+    fbActive = 0;
+    
+    active_fb = {};
+    framebuffers.clear();
+
+    get_pixel_depth_pending = {};
+    get_pixel_depth_cached.clear();
+
+    if (gfx_rapi)
+        gfx_rapi->deinit();
+
+    if (gfx_wapi)
+        gfx_wapi->deinit();
+
+    gfx_rapi = nullptr;
+    gfx_wapi = nullptr;
+}
+
 struct GfxRenderingAPI* gfx_get_current_rendering_api(void) {
     return gfx_rapi;
+}
+
+struct GfxWindowManagerAPI* gfx_get_current_window_manager_api(void) {
+    return gfx_wapi;
 }
 
 void gfx_start_frame(void) {

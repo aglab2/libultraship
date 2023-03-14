@@ -786,6 +786,9 @@ static void gfx_opengl_init(void) {
     glewInit();
 #endif
 
+    current_depth_mask = false;
+    current_framebuffer = 0;
+
     glGenBuffers(1, &opengl_vbo);
     glBindBuffer(GL_ARRAY_BUFFER, opengl_vbo);
 
@@ -811,6 +814,26 @@ static void gfx_opengl_init(void) {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     pixel_depth_rb_size = 1;
+}
+
+static void gfx_opengl_deinit(void) {
+    for (const auto& fb : framebuffers) {
+        glDeleteFramebuffers(1, &fb.fbo);
+        glDeleteRenderbuffers(1, &fb.rbo);
+        glDeleteRenderbuffers(1, &fb.clrbuf_msaa);
+        glDeleteTextures(1, &fb.clrbuf);
+    }
+    framebuffers.clear();
+
+    for (const auto& [id, shader] : shader_program_pool)
+    {
+        glDeleteShader(shader.opengl_program_id);
+    }
+    shader_program_pool.clear();
+
+    glDeleteFramebuffers(1, &pixel_depth_fb);
+    glDeleteRenderbuffers(1, &pixel_depth_rb);
+    glDeleteBuffers(1, &opengl_vbo);
 }
 
 static void gfx_opengl_on_resize(void) {
@@ -1040,6 +1063,7 @@ struct GfxRenderingAPI gfx_opengl_api = { gfx_opengl_get_name,
                                           gfx_opengl_set_use_alpha,
                                           gfx_opengl_draw_triangles,
                                           gfx_opengl_init,
+                                          gfx_opengl_deinit,
                                           gfx_opengl_on_resize,
                                           gfx_opengl_start_frame,
                                           gfx_opengl_end_frame,

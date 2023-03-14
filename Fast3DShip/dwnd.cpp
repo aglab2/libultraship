@@ -87,7 +87,7 @@ static void dwnd_init(const char* game_name, const char* gfx_api_name, bool star
     Plugin::resize(false);
 }
 
-void dwnd_close(void) {
+void dwnd_deinit(void) {
     auto& gfxInfo = Plugin::info();
 
     wglMakeCurrent(NULL, NULL);
@@ -101,6 +101,9 @@ void dwnd_close(void) {
         ReleaseDC(gfxInfo.hWnd, hDC);
         hDC = NULL;
     }
+}
+
+void dwnd_close(void) {
 }
 
 void dwnd_set_keyboard_callbacks(bool (*on_key_down)(int scancode), bool (*on_key_up)(int scancode),
@@ -160,6 +163,7 @@ const char* dwnd_get_key_name(int scancode) {
 
 struct GfxWindowManagerAPI gfx_dwnd = {
     dwnd_init,
+    dwnd_deinit,
     dwnd_close,
     dwnd_set_keyboard_callbacks,
     dwnd_set_fullscreen_changed_callback,
