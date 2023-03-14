@@ -1,6 +1,6 @@
 #include "queue_executor.h"
 
-void QueueExecutor::start(bool allowSameThreadExec, SyncFn fn) {
+void QueueExecutor::start(bool allowSameThreadExec) {
     std::lock_guard lck(initMutex_);
     if (running_)
         return;
@@ -9,80 +9,46 @@ void QueueExecutor::start(bool allowSameThreadExec, SyncFn fn) {
     allowSameThreadExec_ = allowSameThreadExec;
     tasks_.clear();
     executor_ = std::thread{ &QueueExecutor::loop, this };
-    if (fn)
-        syncInternal(std::move(fn));
-
-    acceptsTasks_ = true;
 }
 
-void QueueExecutor::syncInternal(SyncFn fn) {
+QueueExecutor::SyncToken QueueExecutor::sync(Fn fn) {
     auto task = std::make_shared<SyncTask>(std::move(fn));
-    std::future<void> future;
+    bool notify;
     {
         std::unique_lock<std::mutex> lck(mutex_);
+        notify = tasks_.empty();
         if (allowSameThreadExec_ && tasks_.empty()) {
             task->steal();
-        } else {
-            future = task->future();
         }
         tasks_.emplace_back(task);
     }
 
-    cv_.notify_one();
-    if (future.valid())
-        future.get();
-    else
-        task->run();
+    if (notify)
+        cv_.notify_one();
+
+    return SyncToken{ std::move(task) };
 }
 
-void QueueExecutor::sync(SyncFn fn) {
-    if (!acceptsTasks_)
-        return;
-
-    return syncInternal(std::move(fn));
-}
-
-void QueueExecutor::async(AsyncFn fn) {
-    if (!acceptsTasks_)
-        return;
-
+void QueueExecutor::async(Fn fn) {
     auto task = std::make_shared<AsyncTask>(std::move(fn));
+    bool notify;
     {
         std::unique_lock<std::mutex> lck(mutex_);
+        notify = tasks_.empty();
         tasks_.emplace_back(std::move(task));
     }
 
-    cv_.notify_one();
+    if (notify)
+        cv_.notify_one();
 }
 
-void QueueExecutor::asyncOnce(AsyncFn fn) {
-    if (!acceptsTasks_)
-        return;
-
-    auto task = std::make_shared<AsyncTask>(std::move(fn));
-    {
-        std::unique_lock<std::mutex> lck(mutex_);
-        if (!tasks_.empty())
-            return;
-
-        tasks_.emplace_back(std::move(task));
-    }
-
-    cv_.notify_one();
-}
-
-void QueueExecutor::stop(StopFn fn) {
+void QueueExecutor::stop() {
     std::lock_guard lck(initMutex_);
     if (!running_)
         return;
 
-    acceptsTasks_ = false;
-    syncInternal([&](std::promise<void>& p) {
-        if (fn)
-            fn();
-
+    async([&]() {
         running_ = false;
-        p.set_value();
     });
     executor_.join();
 }

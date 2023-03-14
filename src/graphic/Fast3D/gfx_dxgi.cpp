@@ -44,10 +44,7 @@ using namespace Microsoft::WRL; // For ComPtr
 
 static struct {
     HWND h_wnd;
-    bool in_paint;
-    bool recursive_paint_detected;
     uint32_t current_width, current_height;
-    std::string game_name;
     bool is_running = true;
 
     HMODULE dxgi_module;
@@ -242,64 +239,30 @@ static void onkeyup(WPARAM w_param, LPARAM l_param) {
     }
 }
 
-static LRESULT CALLBACK gfx_dxgi_wnd_proc(HWND h_wnd, UINT message, WPARAM w_param, LPARAM l_param) {
-    char fileName[256];
-    SohImGui::EventImpl event_impl;
-    event_impl.Win32 = { h_wnd, static_cast<int>(message), static_cast<int>(w_param), static_cast<int>(l_param) };
-    SohImGui::Update(event_impl);
-    switch (message) {
-        case WM_SIZE:
-            dxgi.current_width = (uint32_t)(l_param & 0xffff);
-            dxgi.current_height = (uint32_t)(l_param >> 16);
-            break;
-        case WM_DESTROY:
-            PostQuitMessage(0);
-            break;
-        case WM_PAINT:
-            if (dxgi.in_paint) {
-                dxgi.recursive_paint_detected = true;
-                return DefWindowProcW(h_wnd, message, w_param, l_param);
-            } else {
-                if (dxgi.run_one_game_iter != nullptr) {
-                    dxgi.in_paint = true;
-                    dxgi.run_one_game_iter();
-                    dxgi.in_paint = false;
-                    if (dxgi.recursive_paint_detected) {
-                        dxgi.recursive_paint_detected = false;
-                        InvalidateRect(h_wnd, nullptr, false);
-                        UpdateWindow(h_wnd);
-                    }
-                }
-            }
-            break;
-        case WM_ACTIVATEAPP:
-            if (dxgi.on_all_keys_up != nullptr) {
-                dxgi.on_all_keys_up();
-            }
-            break;
-        case WM_KEYDOWN:
-            onkeydown(w_param, l_param);
-            break;
-        case WM_KEYUP:
-            onkeyup(w_param, l_param);
-            break;
-        case WM_DROPFILES:
-            DragQueryFileA((HDROP)w_param, 0, fileName, 256);
-            CVarSetString("gDroppedFile", fileName);
-            CVarSetInteger("gNewFileDropped", 1);
-            CVarSave();
-            break;
-        case WM_SYSKEYDOWN:
-            if ((w_param == VK_RETURN) && ((l_param & 1 << 30) == 0)) {
-                toggle_borderless_window_full_screen(!dxgi.is_full_screen, true);
-                break;
-            } else {
-                return DefWindowProcW(h_wnd, message, w_param, l_param);
-            }
-        default:
-            return DefWindowProcW(h_wnd, message, w_param, l_param);
+static void calculate_sync_interval() {
+    const POINT ptZero = { 0, 0 };
+    HMONITOR h_monitor = MonitorFromPoint(ptZero, MONITOR_DEFAULTTOPRIMARY);
+
+    MONITORINFOEX monitor_info;
+    monitor_info.cbSize = sizeof(MONITORINFOEX);
+    GetMonitorInfo(h_monitor, &monitor_info);
+
+    DEVMODE dev_mode;
+    dev_mode.dmSize = sizeof(DEVMODE);
+    dev_mode.dmDriverExtra = 0;
+    EnumDisplaySettings(monitor_info.szDevice, ENUM_CURRENT_SETTINGS, &dev_mode);
+
+    if (dev_mode.dmDisplayFrequency >= 29 && dev_mode.dmDisplayFrequency <= 31) {
+        dxgi.length_in_vsync_frames = 1;
+    } else if (dev_mode.dmDisplayFrequency >= 59 && dev_mode.dmDisplayFrequency <= 61) {
+        dxgi.length_in_vsync_frames = 2;
+    } else if (dev_mode.dmDisplayFrequency >= 89 && dev_mode.dmDisplayFrequency <= 91) {
+        dxgi.length_in_vsync_frames = 3;
+    } else if (dev_mode.dmDisplayFrequency >= 119 && dev_mode.dmDisplayFrequency <= 121) {
+        dxgi.length_in_vsync_frames = 4;
+    } else {
+        dxgi.length_in_vsync_frames = 0;
     }
-    return 0;
 }
 
 void gfx_dxgi_init(const char* game_name, const char* gfx_api_name, bool start_in_fullscreen, uint32_t width,
@@ -317,17 +280,19 @@ void gfx_dxgi_init(const char* game_name, const char* gfx_api_name, bool start_i
 
     // Prepare window title
 
-    char title[512];
-    wchar_t w_title[512];
-    int len = sprintf(title, "%s (%s - %s)", game_name, GFX_BACKEND_NAME, gfx_api_name);
-    mbstowcs(w_title, title, len + 1);
-    dxgi.game_name = game_name;
     dxgi.h_wnd = Plugin::hWnd();
 
     load_dxgi_library();
 
     if (start_in_fullscreen) {
         toggle_borderless_window_full_screen(true, false);
+    }
+
+    auto vsyncMode = Plugin::config().vsyncMode;
+    if (vsyncMode == VsyncMode::AUTOMATIC) {
+        calculate_sync_interval();
+    } else {
+        dxgi.length_in_vsync_frames = (UINT)vsyncMode;
     }
 }
 
@@ -423,10 +388,6 @@ static void gfx_dxgi_swap_buffers_begin(void) {
 }
 
 static void gfx_dxgi_swap_buffers_end(void) {
-    LARGE_INTEGER t0, t1, t2;
-    QueryPerformanceCounter(&t0);
-    QueryPerformanceCounter(&t1);
-
     if (dxgi.applied_maximum_frame_latency > dxgi.maximum_frame_latency) {
         // There seems to be a bug that if latency is decreased, there is no effect of that operation, so recreate swap
         // chain
@@ -452,20 +413,10 @@ static void gfx_dxgi_swap_buffers_end(void) {
 
     if (!dxgi.dropped_frame) {
         if (dxgi.waitable_object != nullptr) {
-            WaitForSingleObject(dxgi.waitable_object, INFINITE);
+            WaitForSingleObject(dxgi.waitable_object, 1000);
         }
         // else TODO: maybe sleep until some estimated time the frame will be shown to reduce lag
     }
-
-    DXGI_FRAME_STATISTICS stats;
-    dxgi.swap_chain->GetFrameStatistics(&stats);
-
-    QueryPerformanceCounter(&t2);
-
-    // printf(L"done %I64u gpu:%d wait:%d freed:%I64u frame:%u %u monitor:%u t:%I64u\n", (unsigned long
-    // long)(t0.QuadPart - dxgi.qpc_init), (int)(t1.QuadPart - t0.QuadPart), (int)(t2.QuadPart - t0.QuadPart), (unsigned
-    // long long)(t2.QuadPart - dxgi.qpc_init), dxgi.pending_frame_stats.rbegin()->first, stats.PresentCount,
-    // stats.SyncRefreshCount, (unsigned long long)(stats.SyncQPCTime.QuadPart - dxgi.qpc_init));
 }
 
 static double gfx_dxgi_get_time(void) {

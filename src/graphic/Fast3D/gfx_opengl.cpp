@@ -760,11 +760,11 @@ static void gfx_opengl_set_zmode_decal(bool zmode_decal) {
 }
 
 static void gfx_opengl_set_viewport(int x, int y, int width, int height) {
-    glViewport(x, y, width, height);
+    glViewport(x, y + Plugin::statusBarHeight(), width, height);
 }
 
 static void gfx_opengl_set_scissor(int x, int y, int width, int height) {
-    glScissor(x, y, width, height);
+    glScissor(x, y + Plugin::statusBarHeight(), width, height);
 }
 
 static void gfx_opengl_set_use_alpha(bool use_alpha) {

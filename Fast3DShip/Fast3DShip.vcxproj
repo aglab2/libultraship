@@ -71,19 +71,19 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(ProjectDir)\mock;$(ProjectDir)\..\src\graphic\Fast3D;$(ProjectDir)thirdparty\yaml-cpp\include;$(ProjectDir)thirdparty\xxHash;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)\mock;$(ProjectDir)\..\src\graphic\Fast3D;$(ProjectDir)thirdparty\yaml-cpp\include;$(ProjectDir)thirdparty\libui-ng;$(ProjectDir)thirdparty\xxHash;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)$(Configuration)\;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(ProjectDir)\mock;$(ProjectDir)\..\src\graphic\Fast3D;$(ProjectDir)thirdparty\yaml-cpp\include;$(ProjectDir)thirdparty\xxHash;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)\mock;$(ProjectDir)\..\src\graphic\Fast3D;$(ProjectDir)thirdparty\yaml-cpp\include;$(ProjectDir)thirdparty\libui-ng;$(ProjectDir)thirdparty\xxHash;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)$(Configuration)\;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(ProjectDir)\mock;$(ProjectDir)\..\src\graphic\Fast3D;$(ProjectDir)thirdparty\yaml-cpp\include;$(ProjectDir)thirdparty\xxHash;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)\mock;$(ProjectDir)\..\src\graphic\Fast3D;$(ProjectDir)thirdparty\yaml-cpp\include;$(ProjectDir)thirdparty\libui-ng;$(ProjectDir)thirdparty\xxHash;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)$(Platform)\$(Configuration)\;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(ProjectDir)\mock;$(ProjectDir)\..\src\graphic\Fast3D;$(ProjectDir)thirdparty\yaml-cpp\include;$(ProjectDir)thirdparty\xxHash;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)\mock;$(ProjectDir)\..\src\graphic\Fast3D;$(ProjectDir)thirdparty\yaml-cpp\include;$(ProjectDir)thirdparty\libui-ng;$(ProjectDir)thirdparty\xxHash;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)$(Platform)\$(Configuration)\;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -102,7 +102,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>opengl32.lib;libyaml.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Windowscodecs.lib;Dwrite.lib;D2d1.lib;Comctl32.lib;Shlwapi.lib;UxTheme.lib;libui.lib;libui-common.lib;opengl32.lib;libyaml.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -119,6 +119,10 @@
       <CallingConvention>VectorCall</CallingConvention>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <ControlFlowGuard>false</ControlFlowGuard>
+      <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -126,7 +130,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>opengl32.lib;libyaml.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Windowscodecs.lib;Dwrite.lib;D2d1.lib;Comctl32.lib;Shlwapi.lib;UxTheme.lib;libui.lib;libui-common.lib;opengl32.lib;libyaml.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -145,7 +149,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>opengl32.lib;libyaml.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libui.lib;libui-common.lib;opengl32.lib;libyaml.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -168,7 +172,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>opengl32.lib;libyaml.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libui.lib;libui-common.lib;opengl32.lib;libyaml.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -186,9 +190,9 @@
     <ClCompile Include="gfx_f3dex2.cpp" />
     <ClCompile Include="gfx_ucode.cpp" />
     <ClCompile Include="glew.cpp" />
-    <ClCompile Include="os.cpp" />
     <ClCompile Include="plugin.cpp" />
     <ClCompile Include="queue_executor.cpp" />
+    <ClCompile Include="tool_ui.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\graphic\Fast3D\gfx_cc.h" />
@@ -227,10 +231,10 @@
     <ClInclude Include="mock\resource\ResourceMgr.h" />
     <ClInclude Include="mock\resource\type\Texture.h" />
     <ClInclude Include="mock\SDL2\SDL.h" />
-    <ClInclude Include="os.h" />
     <ClInclude Include="plugin.h" />
     <ClInclude Include="queue_executor.h" />
     <ClInclude Include="thirdparty\xxHash\xxhash.h" />
+    <ClInclude Include="tool_ui.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

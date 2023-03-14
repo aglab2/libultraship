@@ -9,9 +9,9 @@
 
 static inline int32_t CVarGetInteger(std::string_view name, int32_t defaultValue) {
     if (name == "gMSAAValue") {
-        return Plugin::config().msaa();
+        return Plugin::config().msaa;
     } else if (name == "gDirtPathFix") {
-        return (int) Plugin::config().depthBiasType();
+        return (int) Plugin::config().depthBiasType;
     } else {
         abort();
     }

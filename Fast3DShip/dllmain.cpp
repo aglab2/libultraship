@@ -8,9 +8,8 @@
 #include "gfx_opengl.h"
 #include "gfx_ucode.h"
 #include "dwnd.h"
+#include "tool_ui.h"
 #include "queue_executor.h"
-
-#include <shellapi.h>
 
 #include <atomic>
 #include <condition_variable>
@@ -20,12 +19,14 @@
 #include <thread>
 
 static std::atomic_bool gFullscreen = false;
+static bool gCanDispatch = false;
+static std::mutex gRSPQueueMutex;
 static QueueExecutor gRSPQueue;
 
 static void plugin_init(void) {
     auto& config = Plugin::config();
 
-    switch (config.renderingApi()) {
+    switch (config.renderingApi) {
         case RenderingAPI::D3D11:
             gfx_init(&gfx_dxgi_api, &gfx_direct3d11_api, "SM64", gFullscreen /*fullscreen*/);
             break;
@@ -37,12 +38,12 @@ static void plugin_init(void) {
     // TODO: This should be configurable
     gfx_get_current_rendering_api()->set_texture_filter(FILTER_LINEAR);
 
-    gfx_current_dimensions.width = Plugin::config().width();
-    gfx_current_dimensions.height = Plugin::config().height();
+    gfx_current_dimensions.width = Plugin::config().width;
+    gfx_current_dimensions.height = Plugin::config().height;
     gfx_current_game_window_viewport.x = 0;
     gfx_current_game_window_viewport.y = 0;
-    gfx_current_game_window_viewport.width = Plugin::config().width();
-    gfx_current_game_window_viewport.height = Plugin::config().height();
+    gfx_current_game_window_viewport.width = Plugin::config().width;
+    gfx_current_game_window_viewport.height = Plugin::config().height;
 }
 
 static void plugin_deinit(void) {
@@ -143,7 +144,16 @@ EXPORT void CALL DllAbout(HWND hParent) {
   output:   none
 *******************************************************************/
 EXPORT void CALL DllConfig(HWND hParent) {
-    ShellExecute(NULL, NULL, Plugin::config().configPath().c_str(), NULL, NULL, SW_SHOWNORMAL);
+    UI::show(hParent);
+    {
+        std::lock_guard<std::mutex> lck(gRSPQueueMutex);
+        if (gCanDispatch) {
+            gRSPQueue.async([]() {
+                plugin_deinit();
+                plugin_init();
+            });
+        }
+    }
 }
 
 /******************************************************************
@@ -226,12 +236,14 @@ EXPORT void CALL MoveScreen(int xpos, int ypos) {
 *******************************************************************/
 EXPORT void CALL ProcessDList(void) {
     auto& cfg = Plugin::config();
-    gRSPQueue.sync([](std::promise<void>& p) {
-        plugin_dl();
-        p.set_value();
-        // draw is asynchronous
-        plugin_draw();
-    });
+    QueueExecutor::SyncToken token;
+    {
+        std::lock_guard<std::mutex> lck(gRSPQueueMutex);
+        if (gCanDispatch) {
+            token = gRSPQueue.sync(plugin_dl);
+            gRSPQueue.async(plugin_draw);
+        }
+    }
 }
 
 /******************************************************************
@@ -252,7 +264,14 @@ EXPORT void CALL ProcessRDPList(void) {
 *******************************************************************/
 EXPORT void CALL RomClosed(void) {
     auto& config = Plugin::config();
-    gRSPQueue.stop(plugin_deinit);
+    {
+        std::lock_guard<std::mutex> lck(gRSPQueueMutex);
+        if (gCanDispatch) {
+            gRSPQueue.async(plugin_deinit);
+            gCanDispatch = false;
+        }
+    }
+    gRSPQueue.stop();
 }
 
 /******************************************************************
@@ -265,11 +284,12 @@ EXPORT void CALL RomClosed(void) {
 EXPORT void CALL RomOpen(void) {
     auto& config = Plugin::config();
 
-    // RenderingAPI::OPENGL != config.renderingApi()
-    gRSPQueue.start(false, [](std::promise<void>& p) {
-        plugin_init();
-        p.set_value();
-    });
+    gRSPQueue.start(RenderingAPI::OPENGL != config.renderingApi);
+    {
+        std::lock_guard<std::mutex> lck(gRSPQueueMutex);
+        gCanDispatch = true;
+        gRSPQueue.async(plugin_init);
+    }
 }
 
 /******************************************************************

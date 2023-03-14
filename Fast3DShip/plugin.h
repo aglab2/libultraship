@@ -22,7 +22,7 @@ class Plugin {
     static int statusBarHeight() {
         return me().sStatusBarHeight();
     }
-    static const Config& config() {
+    static Config& config() {
         return me().config_;
     }
 

@@ -25,11 +25,11 @@ void Plugin::sResize(bool fs) {
     fullscreen_ = fs;
     int width, height;
     if (fs) {
-        width = config_.fullScreenWidth();
-        height = config_.fullScreenHeight();
+        width = config_.fullScreenWidth;
+        height = config_.fullScreenHeight;
     } else {
-        width = config_.width();
-        height = config_.height();
+        width = config_.width;
+        height = config_.height;
     }
     auto hWnd = gfxInfo_.hWnd;
     RECT windowRect;

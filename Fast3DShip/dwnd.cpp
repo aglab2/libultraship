@@ -77,7 +77,7 @@ static void dwnd_init(const char* game_name, const char* gfx_api_name, bool star
 
     glewInit();
 
-    auto vsync = Plugin::config().vsyncMode();
+    auto vsync = Plugin::config().vsyncMode;
     if (vsync == VsyncMode::AUTOMATIC) {
         wglSwapIntervalEXT(-1);
     } else {
@@ -90,6 +90,7 @@ static void dwnd_init(const char* game_name, const char* gfx_api_name, bool star
 void dwnd_deinit(void) {
     auto& gfxInfo = Plugin::info();
 
+    glFinish();
     wglMakeCurrent(NULL, NULL);
 
     if (hRC != NULL) {
@@ -126,8 +127,8 @@ void dwnd_main_loop(void (*run_one_game_iter)(void)) {
 }
 
 void dwnd_get_dimensions(uint32_t* width, uint32_t* height) {
-    *width = Plugin::config().width();
-    *height = Plugin::config().height();
+    *width = Plugin::config().width;
+    *height = Plugin::config().height;
 }
 
 void dwnd_handle_events(void) {

@@ -4,3 +4,6 @@
 [submodule "Fast3DShip/thirdparty/xxHash"]
 	path = Fast3DShip/thirdparty/xxHash
 	url = https://github.com/Cyan4973/xxHash.git
+[submodule "Fast3DShip/thirdparty/libui-ng"]
+	path = Fast3DShip/thirdparty/libui-ng
+	url = git@github.com:aglab2/libui-ng.git

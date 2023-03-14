@@ -5,23 +5,18 @@
 // That means that 'sync' is always executing on either created thread or in current thread
 // Similarly to macOS impl 'async' always ex
 
+#include <atomic>
+#include <condition_variable>
 #include <deque>
-#include <future>
+#include <functional>
+#include <memory>
+#include <mutex>
 
 class QueueExecutor {
   public:
-    using SyncFn = std::function<void(std::promise<void>&)>;
-    using AsyncFn = std::function<void()>;
-    using StopFn = std::function<void()>;
+    using Fn = std::function<void()>;
     QueueExecutor() = default;
 
-    void start(bool allowSameThreadExec, SyncFn fn = {});
-    void sync(SyncFn);
-    void async(AsyncFn);
-    void asyncOnce(AsyncFn);
-    void stop(StopFn = {});
-
-  private:
     class Task {
       public:
         virtual void process() = 0;
@@ -29,25 +24,32 @@ class QueueExecutor {
 
     class SyncTask final : public Task {
       public:
-        SyncTask(SyncFn fn) : task_(fn) {
+        SyncTask(Fn fn) : task_(fn) {
         }
 
         virtual void process() final override {
             if (!stolen_) {
                 run();
             } else {
-                completion_.get_future().wait();
+                completed_.wait(false);
+            }
+        }
+
+        void tokenDtor() {
+            if (!stolen_) {
+                completed_.wait(false);
+            } else {
+                run();
             }
         }
 
         void run() {
-            task_(completion_);
+            task_();
+            completed_ = true;
+            completed_.notify_one();
         }
         void steal() {
             stolen_ = true;
-        }
-        auto future() {
-            return completion_.get_future();
         }
 
       private:
@@ -57,14 +59,51 @@ class QueueExecutor {
         // Packaged task to be executed. Future is used for syncing purposes when necessary
         // If task is 'stolen', executor will use future to ensure caller thread is done
         // If task is not 'stolen', sync caller will check is 'executor' is done
-        std::promise<void> completion_;
+        std::atomic_bool completed_ = false;
 
-        SyncFn task_;
+        Fn task_;
     };
 
+    class SyncToken
+    {
+    public:
+        SyncToken() = default;
+        explicit SyncToken(std::shared_ptr<SyncTask>&& task)
+            : task_(std::forward<std::shared_ptr<SyncTask>>(task)) {
+        }
+
+        SyncToken(const SyncToken&) = delete;
+        SyncToken& operator=(const SyncToken&) = delete;
+
+        SyncToken(SyncToken&& other) : task_(std::move(other.task_)) {
+        }
+
+        SyncToken& operator=(SyncToken&& other) {
+            if (task_)
+                task_->tokenDtor();
+
+            task_ = std::move(other.task_);
+            return *this;
+        }
+
+        ~SyncToken() {
+            if (task_)
+                task_->tokenDtor();
+        }
+
+    private:
+        std::shared_ptr<SyncTask> task_;
+    };
+
+    void start(bool allowSameThreadExec);
+    SyncToken sync(Fn);
+    void async(Fn);
+    void stop();
+
+  private:
     class AsyncTask final : public Task {
       public:
-        AsyncTask(AsyncFn fn) : task_(fn) {
+        AsyncTask(Fn fn) : task_(fn) {
         }
 
         virtual void process() final override {
@@ -72,7 +111,7 @@ class QueueExecutor {
         }
 
       private:
-        AsyncFn task_;
+        Fn task_;
     };
 
     using TaskPtr = std::shared_ptr<Task>;
@@ -86,7 +125,6 @@ class QueueExecutor {
     std::mutex mutex_;
     std::deque<TaskPtr> tasks_;
     bool running_ = false;
-    std::atomic_bool acceptsTasks_ = false;
 
     // The Executor as it goes
     std::thread executor_;
@@ -95,6 +133,4 @@ class QueueExecutor {
     std::mutex initMutex_;
 
     void loop();
-
-    void syncInternal(SyncFn fn);
 };

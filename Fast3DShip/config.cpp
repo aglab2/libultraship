@@ -1,27 +1,25 @@
 #include "config.h"
 
-#include <filesystem>
-#include <fstream>
-#include <yaml-cpp/yaml.h>
+#include <io.h>
+#include <fcntl.h>
+#include <Shlobj.h>
+#include <Shlobj_core.h>
+#include <shlwapi.h>
 #include <Windows.h>
 
-#include "os.h"
+#include <yaml-cpp/yaml.h>
+
 #include "plugin.h"
 
-Config::Config() {
-    std::filesystem::path exePath(OS::ExecutablePath());
-    auto exeDir = exePath.parent_path();
-
-    auto configDir = exeDir / "Config";
-    if (!std::filesystem::exists(configDir))
-        std::filesystem::create_directory(configDir);
-
-    auto configFile = configDir / "f3d.yaml";
-    configPath_ = configFile.string();
-    // if (std::filesystem::exists(configFile))
-    read(configFile.string());
-    // else
-    //     write(configFile.u8string());
+static const char* getConfigPath() {
+    static char path[MAX_PATH]{ 0 };
+    if ('\0' == *path) {
+        SHGetFolderPath(NULL, CSIDL_APPDATA, NULL, 0, path);
+        PathAppend(path, "Fast3DShip");
+        CreateDirectory(path, nullptr);
+        PathAppend(path, "cfg.yaml");
+    }
+    return path;
 }
 
 static VsyncMode toVsyncMode(const std::string& mode) {
@@ -43,82 +41,95 @@ static RenderingAPI toRenderingApi(std::string api) {
     return RenderingAPI::D3D11;
 }
 
-static int toSwapEffect(std::string api) {
-    std::transform(api.begin(), api.end(), api.begin(), [](unsigned char c) { return std::tolower(c); });
-    if ("discard" == api)
-        return 0;
-    if ("sequential" == api)
-        return 1;
-    if ("flipsequential" == api)
-        return 3;
-    if ("flipdiscard" == api)
-        return 4;
+static std::string toString(RenderingAPI api) {
+    switch (api) {
+        case RenderingAPI::D3D11:
+            return "d3d11";
+        case RenderingAPI::OPENGL:
+            return "opengl";
+    }
 
-    return 0;
+    throw std::runtime_error("Bad value");
 }
 
-static int toScaling(std::string api) {
-    std::transform(api.begin(), api.end(), api.begin(), [](unsigned char c) { return std::tolower(c); });
-    if ("stretch" == api)
-        return 0;
-    if ("none" == api)
-        return 1;
-    if ("aspectratiostretch" == api)
-        return 2;
+static DepthBiasType toDepthBiasType(std::string dbt) {
+    std::transform(dbt.begin(), dbt.end(), dbt.begin(), [](unsigned char c) { return std::tolower(c); });
+    if (dbt == "default")
+        return DepthBiasType::DEFAULT;
+    if (dbt == "n64")
+        return DepthBiasType::SCALED_N64_LIKE;
+    if (dbt == "no_vanish")
+        return DepthBiasType::SCALED_NO_VANISH;
 
-    return 0;
+    return DepthBiasType::SCALED_NO_VANISH;
 }
 
-bool Config::read(const std::string& p) try {
-    YAML::Node config = YAML::LoadFile(p);
+static std::string toString(DepthBiasType dbt) {
+    switch (dbt) {
+        case DepthBiasType::DEFAULT:
+            return "default";
+        case DepthBiasType::SCALED_N64_LIKE:
+            return "n64";
+        case DepthBiasType::SCALED_NO_VANISH:
+            return "no_vanish";
+    }
 
-    width_ = config["width"].as<int>();
-    height_ = config["height"].as<int>();
-    vsyncMode_ = toVsyncMode(config["vsync"].as<std::string>());
-    try {
-        nerfFogFactor_ = config["nerfFog"].as<int>();
-    } catch (...) {}
-    try {
-        shadowBias_ = config["shadowBias"].as<float>();
-    } catch (...) {}
-    try {
-        fullScreenWidth_ = config["fullScreenWidth"].as<int>();
-    } catch (...) { fullScreenWidth_ = width_; }
-    try {
-        fullScreenWidth_ = config["fullScreenHeight"].as<int>();
-    } catch (...) { fullScreenHeight_ = height_; }
-    try {
-        renderingApi_ = toRenderingApi(config["api"].as<std::string>());
-    } catch (...) { renderingApi_ = RenderingAPI::D3D11; }
+    throw std::runtime_error("Bad value");
+}
+
+bool Config::load() try {
+    YAML::Node config = YAML::LoadFile(getConfigPath());
 
     try {
-        sampleCount_ = config["sampleCount"].as<int>();
-    } catch (...) { sampleCount_ = 1; }
-
+        width = config["width"].as<int>();
+    } catch (...) { width = 640; }
     try {
-        auto str = config["swapEffect"].as<std::string>();
-        swapEffect_ = toSwapEffect(std::move(str));
-    } catch (...) { swapEffect_ = 0; }
-
+        height = config["height"].as<int>();
+    } catch (...) { height = 480; }
     try {
-        auto str = config["scaling"].as<std::string>();
-        scaling_ = toScaling(std::move(str));
-    } catch (...) { scaling_ = 0; }
-
+        vsyncMode = toVsyncMode(config["vsync"].as<std::string>());
+    } catch (...) { vsyncMode = VsyncMode::DISABLED; }
     try {
-        swapFlags_ = config["swapFlags"].as<int>();
-    } catch (...) { swapFlags_ = 0; }
-
+        fullScreenWidth = config["fullScreenWidth"].as<int>();
+    } catch (...) { fullScreenWidth = width; }
     try {
-        msaa_ = config["msaa"].as<int>();
-    } catch (...) { msaa_ = 1; }
-
+        fullScreenWidth = config["fullScreenHeight"].as<int>();
+    } catch (...) { fullScreenHeight = height; }
     try {
-        depthBiasType_ = (DepthBiasType) config["presentFlags"].as<int>();
-    } catch (...) { depthBiasType_ = DepthBiasType::SCALED_NO_VANISH; }
+        renderingApi = toRenderingApi(config["api"].as<std::string>());
+    } catch (...) { renderingApi = RenderingAPI::D3D11; }
+    try {
+        msaa = config["msaa"].as<int>();
+    } catch (...) { msaa = 1; }
+    try {
+        depthBiasType = toDepthBiasType(config["depthBiasType"].as<std::string>());
+    } catch (...) { depthBiasType = DepthBiasType::SCALED_NO_VANISH; }
 
     return true;
 } catch (...) {
-    MessageBox(nullptr, "Failed to read 'f3d.yaml' config file, using default", "Config Reader", MB_OK | MB_ICONERROR);
     return false;
+}
+
+void Config::save() {
+    try {
+        YAML::Node config;
+
+        config["width"] = width;
+        config["height"] = height;
+        config["vsync"] = (int) vsyncMode;
+        config["fullScreenWidth"] = fullScreenWidth;
+        config["fullScreenHeight"] = fullScreenHeight;
+        config["api"] = toString(renderingApi);
+        config["msaa"] = msaa;
+        config["depthBiasType"] = toString(depthBiasType);
+
+        YAML::Emitter emitter;
+        emitter << config;
+
+        int fd = _open(getConfigPath(), _O_WRONLY | _O_CREAT | _O_TRUNC, 0666);
+        if (-1 != fd) {
+            _write(fd, emitter.c_str(), emitter.size());
+            _close(fd);
+        }
+    } catch (...) {}
 }
