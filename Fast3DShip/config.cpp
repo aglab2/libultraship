@@ -93,7 +93,7 @@ bool Config::load() try {
         fullScreenWidth = config["fullScreenWidth"].as<int>();
     } catch (...) { fullScreenWidth = width; }
     try {
-        fullScreenWidth = config["fullScreenHeight"].as<int>();
+        fullScreenHeight = config["fullScreenHeight"].as<int>();
     } catch (...) { fullScreenHeight = height; }
     try {
         renderingApi = toRenderingApi(config["api"].as<std::string>());

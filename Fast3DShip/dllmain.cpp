@@ -38,12 +38,13 @@ static void plugin_init(void) {
     // TODO: This should be configurable
     gfx_get_current_rendering_api()->set_texture_filter(FILTER_LINEAR);
 
-    gfx_current_dimensions.width = Plugin::config().width;
-    gfx_current_dimensions.height = Plugin::config().height;
+    gfx_current_dimensions.width = gFullscreen ? Plugin::config().fullScreenWidth : Plugin::config().width;
+    gfx_current_dimensions.height = gFullscreen ? Plugin::config().fullScreenHeight : Plugin::config().height;
     gfx_current_game_window_viewport.x = 0;
     gfx_current_game_window_viewport.y = 0;
-    gfx_current_game_window_viewport.width = Plugin::config().width;
-    gfx_current_game_window_viewport.height = Plugin::config().height;
+    // TODO: This is a hard requirement currently, figure out proper way to do it
+    gfx_current_game_window_viewport.width = gfx_current_dimensions.width;
+    gfx_current_game_window_viewport.height = gfx_current_dimensions.height;
 }
 
 static void plugin_deinit(void) {
@@ -112,8 +113,12 @@ EXPORT void CALL CaptureScreen(char* Directory) {
   output:   none
 *******************************************************************/
 EXPORT void CALL ChangeWindow(void) {
-    gFullscreen = !gFullscreen;
-    gfx_get_current_window_manager_api()->set_fullscreen(gFullscreen);
+    gRSPQueue.async([]() {
+        gFullscreen = !gFullscreen;
+        gfx_get_current_window_manager_api()->set_fullscreen(gFullscreen);
+        //plugin_deinit();
+        //plugin_init();
+    });
 }
 
 /******************************************************************
@@ -235,7 +240,6 @@ EXPORT void CALL MoveScreen(int xpos, int ypos) {
   output:   none
 *******************************************************************/
 EXPORT void CALL ProcessDList(void) {
-    auto& cfg = Plugin::config();
     QueueExecutor::SyncToken token;
     {
         std::lock_guard<std::mutex> lck(gRSPQueueMutex);
@@ -263,7 +267,6 @@ EXPORT void CALL ProcessRDPList(void) {
   output:   none
 *******************************************************************/
 EXPORT void CALL RomClosed(void) {
-    auto& config = Plugin::config();
     {
         std::lock_guard<std::mutex> lck(gRSPQueueMutex);
         if (gCanDispatch) {
