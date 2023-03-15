@@ -111,6 +111,9 @@
     <ClCompile Include="tool_ui.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="screenshot.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="config.h">
@@ -231,6 +234,9 @@
       <Filter>xxhash</Filter>
     </ClInclude>
     <ClInclude Include="tool_ui.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="screenshot.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

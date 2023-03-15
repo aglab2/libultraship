@@ -1107,6 +1107,55 @@ ImTextureID gfx_d3d11_get_texture_by_id(int id) {
     return (ImTextureID) d3d.textures[id].resource_view.Get();
 }
 
+bool gfx_d3d11_screenshot(void** buf, uint32_t* width, uint32_t* height, bool* yflip) try {
+    IDXGISwapChain1* swap_chain = gfx_dxgi_get_swap_chain();
+    if (!swap_chain)
+        return false;
+
+    ComPtr<ID3D11Texture2D> back_buffer;
+    ThrowIfFailed(swap_chain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**) back_buffer.GetAddressOf()));
+
+    D3D11_TEXTURE2D_DESC back_buffer_desc;
+    back_buffer->GetDesc(&back_buffer_desc);
+
+    TextureData& tex = d3d.textures[0];
+    uint32_t back_buffer_width = tex.width;
+    uint32_t back_buffer_height = tex.height;
+
+    D3D11_TEXTURE2D_DESC desc{};
+    desc.Width = back_buffer_width;
+    desc.Height = back_buffer_height;
+    desc.MipLevels = 1;
+    desc.ArraySize = 1;
+    desc.Format = back_buffer_desc.Format;
+    desc.SampleDesc.Count = 1;
+    desc.SampleDesc.Quality = 0;
+    desc.Usage = D3D11_USAGE_STAGING;
+    desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+
+    ComPtr<ID3D11Texture2D> texture;
+    ThrowIfFailed(d3d.device->CreateTexture2D(&desc, nullptr, texture.GetAddressOf()));
+
+    d3d.context->CopyResource(texture.Get(), back_buffer.Get());
+
+    D3D11_MAPPED_SUBRESOURCE mappedTex;
+    d3d.context->Map(texture.Get(), 0, D3D11_MAP_READ, 0, &mappedTex);
+
+    BYTE* pixels = static_cast<BYTE*>(mappedTex.pData);
+    uint32_t height_actual = back_buffer_height - Plugin::statusBarHeight();
+    size_t amount = back_buffer_width * height_actual * 4;
+    *buf = malloc(amount);
+    memcpy(*buf, pixels, amount);
+    *width = back_buffer_width;
+    *height = height_actual;
+    *yflip = false;
+
+    d3d.context->Unmap(texture.Get(), 0);
+    return true;
+} catch (...) { 
+    return false;
+}
+
 struct GfxRenderingAPI gfx_direct3d11_api = { gfx_d3d11_get_name,
                                               gfx_d3d11_get_max_texture_size,
                                               gfx_d3d11_get_clip_parameters,
@@ -1141,6 +1190,7 @@ struct GfxRenderingAPI gfx_direct3d11_api = { gfx_d3d11_get_name,
                                               gfx_d3d11_select_texture_fb,
                                               gfx_d3d11_delete_texture,
                                               gfx_d3d11_set_texture_filter,
-                                              gfx_d3d11_get_texture_filter };
+                                              gfx_d3d11_get_texture_filter,
+                                              gfx_d3d11_screenshot };
 
 #endif

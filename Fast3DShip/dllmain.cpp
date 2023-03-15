@@ -8,6 +8,7 @@
 #include "gfx_opengl.h"
 #include "gfx_ucode.h"
 #include "dwnd.h"
+#include "screenshot.h"
 #include "tool_ui.h"
 #include "queue_executor.h"
 
@@ -22,6 +23,8 @@ static std::atomic_bool gFullscreen = false;
 static bool gCanDispatch = false;
 static std::mutex gRSPQueueMutex;
 static QueueExecutor gRSPQueue;
+static std::atomic_bool gWantScreenshot;
+static std::string gScreenshotPath;
 
 static void plugin_init(void) {
     auto& config = Plugin::config();
@@ -102,6 +105,8 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
   output:   none
 *******************************************************************/
 EXPORT void CALL CaptureScreen(char* Directory) {
+    gScreenshotPath = Directory;
+    gWantScreenshot.store(true, std::memory_order_release);
 }
 
 /******************************************************************
@@ -113,12 +118,17 @@ EXPORT void CALL CaptureScreen(char* Directory) {
   output:   none
 *******************************************************************/
 EXPORT void CALL ChangeWindow(void) {
-    gRSPQueue.async([]() {
-        gFullscreen = !gFullscreen;
-        gfx_get_current_window_manager_api()->set_fullscreen(gFullscreen);
-        //plugin_deinit();
-        //plugin_init();
-    });
+    {
+        std::lock_guard<std::mutex> lck(gRSPQueueMutex);
+        if (gCanDispatch) {
+            gRSPQueue.async([]() {
+                gFullscreen = !gFullscreen;
+                gfx_get_current_window_manager_api()->set_fullscreen(gFullscreen);
+                // plugin_deinit();
+                // plugin_init();
+            });
+        }
+    }
 }
 
 /******************************************************************
@@ -245,6 +255,24 @@ EXPORT void CALL ProcessDList(void) {
         std::lock_guard<std::mutex> lck(gRSPQueueMutex);
         if (gCanDispatch) {
             token = gRSPQueue.sync(plugin_dl);
+            if (gWantScreenshot.load(std::memory_order_acquire)) {
+                gRSPQueue.async([ path{ std::move(gScreenshotPath) } ]() {
+                    void* buf;
+                    uint32_t width;
+                    uint32_t height;
+                    bool yflip;
+                    if (gfx_get_current_rendering_api()->screenshot(&buf, &width, &height, &yflip)) {
+                        char romname[21];
+                        for (int i = 0; i < 20; ++i)
+                            romname[i] = Plugin::info().HEADER[(32 + i) ^ 3];
+                        romname[20] = 0;
+
+                        save_screenshot(path, romname, width, height, (const unsigned char*) buf, yflip);
+                        free(buf);
+                    }
+                });
+                gWantScreenshot = false;
+            }
             gRSPQueue.async(plugin_draw);
         }
     }

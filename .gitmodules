@@ -7,3 +7,9 @@
 [submodule "Fast3DShip/thirdparty/libui-ng"]
 	path = Fast3DShip/thirdparty/libui-ng
 	url = git@github.com:aglab2/libui-ng.git
+[submodule "Fast3DShip/thirdparty/libpng"]
+	path = Fast3DShip/thirdparty/libpng
+	url = https://github.com/glennrp/libpng.git
+[submodule "Fast3DShip/thirdparty/zlib-ng"]
+	path = Fast3DShip/thirdparty/zlib-ng
+	url = https://github.com/zlib-ng/zlib-ng.git

@@ -68,6 +68,7 @@ struct GfxRenderingAPI {
     void (*delete_texture)(uint32_t texID);
     void (*set_texture_filter)(FilteringMode mode);
     FilteringMode (*get_texture_filter)(void);
+    bool (*screenshot)(void** buf, uint32_t* width, uint32_t* height, bool* yflip);
 };
 
 #endif

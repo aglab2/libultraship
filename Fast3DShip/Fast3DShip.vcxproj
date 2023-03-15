@@ -71,19 +71,19 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(ProjectDir)\mock;$(ProjectDir)\..\src\graphic\Fast3D;$(ProjectDir)thirdparty\yaml-cpp\include;$(ProjectDir)thirdparty\libui-ng;$(ProjectDir)thirdparty\xxHash;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)\mock;$(ProjectDir)\..\src\graphic\Fast3D;$(ProjectDir)thirdparty;$(ProjectDir)thirdparty\yaml-cpp\include;$(ProjectDir)thirdparty\libui-ng;$(ProjectDir)thirdparty\libpng;$(ProjectDir)thirdparty\xxHash;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)$(Configuration)\;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(ProjectDir)\mock;$(ProjectDir)\..\src\graphic\Fast3D;$(ProjectDir)thirdparty\yaml-cpp\include;$(ProjectDir)thirdparty\libui-ng;$(ProjectDir)thirdparty\xxHash;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)\mock;$(ProjectDir)\..\src\graphic\Fast3D;$(ProjectDir)thirdparty;$(ProjectDir)thirdparty\yaml-cpp\include;$(ProjectDir)thirdparty\libui-ng;$(ProjectDir)thirdparty\libpng;$(ProjectDir)thirdparty\xxHash;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)$(Configuration)\;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(ProjectDir)\mock;$(ProjectDir)\..\src\graphic\Fast3D;$(ProjectDir)thirdparty\yaml-cpp\include;$(ProjectDir)thirdparty\libui-ng;$(ProjectDir)thirdparty\xxHash;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)\mock;$(ProjectDir)\..\src\graphic\Fast3D;$(ProjectDir)thirdparty;$(ProjectDir)thirdparty\yaml-cpp\include;$(ProjectDir)thirdparty\libui-ng;$(ProjectDir)thirdparty\libpng;$(ProjectDir)thirdparty\xxHash;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)$(Platform)\$(Configuration)\;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(ProjectDir)\mock;$(ProjectDir)\..\src\graphic\Fast3D;$(ProjectDir)thirdparty\yaml-cpp\include;$(ProjectDir)thirdparty\libui-ng;$(ProjectDir)thirdparty\xxHash;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)\mock;$(ProjectDir)\..\src\graphic\Fast3D;$(ProjectDir)thirdparty;$(ProjectDir)thirdparty\yaml-cpp\include;$(ProjectDir)thirdparty\libui-ng;$(ProjectDir)thirdparty\libpng;$(ProjectDir)thirdparty\xxHash;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)$(Platform)\$(Configuration)\;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -102,7 +102,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>Windowscodecs.lib;Dwrite.lib;D2d1.lib;Comctl32.lib;Shlwapi.lib;UxTheme.lib;libui.lib;libui-common.lib;opengl32.lib;libyaml.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>zlib-ng.lib;libpng.lib;Windowscodecs.lib;Dwrite.lib;D2d1.lib;Comctl32.lib;Shlwapi.lib;UxTheme.lib;libui.lib;libui-common.lib;opengl32.lib;libyaml.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -130,7 +130,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>Windowscodecs.lib;Dwrite.lib;D2d1.lib;Comctl32.lib;Shlwapi.lib;UxTheme.lib;libui.lib;libui-common.lib;opengl32.lib;libyaml.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>zlib-ng.lib;libpng.lib;Windowscodecs.lib;Dwrite.lib;D2d1.lib;Comctl32.lib;Shlwapi.lib;UxTheme.lib;libui.lib;libui-common.lib;opengl32.lib;libyaml.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -149,7 +149,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>libui.lib;libui-common.lib;opengl32.lib;libyaml.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>zlib-ng.lib;libpng.lib;Windowscodecs.lib;Dwrite.lib;D2d1.lib;Comctl32.lib;Shlwapi.lib;UxTheme.lib;libui.lib;libui-common.lib;opengl32.lib;libyaml.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -172,7 +172,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>libui.lib;libui-common.lib;opengl32.lib;libyaml.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>zlib-ng.lib;libpng.lib;Windowscodecs.lib;Dwrite.lib;D2d1.lib;Comctl32.lib;Shlwapi.lib;UxTheme.lib;libui.lib;libui-common.lib;opengl32.lib;libyaml.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -192,6 +192,7 @@
     <ClCompile Include="glew.cpp" />
     <ClCompile Include="plugin.cpp" />
     <ClCompile Include="queue_executor.cpp" />
+    <ClCompile Include="screenshot.cpp" />
     <ClCompile Include="tool_ui.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -233,6 +234,7 @@
     <ClInclude Include="mock\SDL2\SDL.h" />
     <ClInclude Include="plugin.h" />
     <ClInclude Include="queue_executor.h" />
+    <ClInclude Include="screenshot.h" />
     <ClInclude Include="thirdparty\xxHash\xxhash.h" />
     <ClInclude Include="tool_ui.h" />
   </ItemGroup>

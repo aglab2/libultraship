@@ -1044,6 +1044,16 @@ FilteringMode gfx_opengl_get_texture_filter(void) {
     return current_filter_mode;
 }
 
+bool gfx_opengl_screenshot(void** buf, uint32_t* width, uint32_t* height, bool* yflip) {
+    auto& fb = framebuffers[0];
+    *buf = malloc(fb.width * fb.height * 4);
+    glReadPixels(0, Plugin::statusBarHeight(), fb.width, fb.height, GL_RGBA, GL_UNSIGNED_BYTE, *buf);
+    *width = fb.width;
+    *height = fb.height;
+    *yflip = true;
+    return true;
+}
+
 struct GfxRenderingAPI gfx_opengl_api = { gfx_opengl_get_name,
                                           gfx_opengl_get_max_texture_size,
                                           gfx_opengl_get_clip_parameters,
@@ -1078,6 +1088,7 @@ struct GfxRenderingAPI gfx_opengl_api = { gfx_opengl_get_name,
                                           gfx_opengl_select_texture_fb,
                                           gfx_opengl_delete_texture,
                                           gfx_opengl_set_texture_filter,
-                                          gfx_opengl_get_texture_filter };
+                                          gfx_opengl_get_texture_filter,
+                                          gfx_opengl_screenshot };
 
 #endif
